@@ -13,7 +13,7 @@ export default function StudyCard({ study }) {
       </div>
       <p className="study-card-summary">{study.summary}</p>
       <div className="study-card-tags">
-        {study.parameters.slice(0, 4).map(p => (
+        {(study.parameters || []).slice(0, 4).map(p => (
           <span key={p} className="tag">{p}</span>
         ))}
       </div>

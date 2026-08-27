@@ -1,9 +1,25 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { mockStudies } from '@/lib/mockData';
+import { getStudies } from '@/lib/supabase';
 import StudyCard from '@/components/StudyCard';
 
 export default function Home() {
-  const recentStudies = mockStudies.slice(0, 3);
+  const [studies, setStudies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    getStudies().then(data => {
+      if (!active) return;
+      setStudies(data);
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const recentStudies = studies.slice(0, 3);
 
   return (
     <main>
@@ -50,6 +66,16 @@ export default function Home() {
             <StudyCard key={study.id} study={study} />
           ))}
         </div>
+        {loading && (
+          <p style={{ color: 'var(--color-text-tertiary)', padding: '40px 0' }}>
+            Loading studies...
+          </p>
+        )}
+        {!loading && recentStudies.length === 0 && (
+          <p style={{ color: 'var(--color-text-tertiary)', padding: '40px 0' }}>
+            No studies yet. <Link href="/upload">Be the first to upload one.</Link>
+          </p>
+        )}
       </section>
     </main>
   );

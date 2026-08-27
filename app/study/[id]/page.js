@@ -1,14 +1,35 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { mockStudies, getStudyById } from '@/lib/mockData';
+import { getStudy } from '@/lib/supabase';
 
-// Generate static paths for mock data
-export function generateStaticParams() {
-  return mockStudies.map(study => ({ id: study.id }));
-}
+export default function StudyPage() {
+  const { id } = useParams();
+  const [study, setStudy] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function StudyPage({ params }) {
-  const { id } = await params;
-  const study = getStudyById(id);
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    setLoading(true);
+    getStudy(id).then(data => {
+      if (!active) return;
+      setStudy(data);
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="detail-page">
+        <Link href="/explore" className="detail-back">&larr; Back to Explore</Link>
+        <p style={{ color: 'var(--color-text-tertiary)', padding: '40px 0' }}>Loading study...</p>
+      </main>
+    );
+  }
 
   if (!study) {
     return (
@@ -25,6 +46,9 @@ export default async function StudyPage({ params }) {
   const dateRange = study.date_end
     ? `${study.date_start} to ${study.date_end}`
     : study.date_start;
+
+  const parameters = study.parameters || [];
+  const findings = study.findings || [];
 
   return (
     <main className="detail-page">
@@ -47,11 +71,11 @@ export default async function StudyPage({ params }) {
           </div>
 
           {/* Key Findings */}
-          {study.findings && study.findings.length > 0 && (
+          {findings.length > 0 && (
             <div className="detail-card">
               <h2>Key Findings</h2>
               <ul>
-                {study.findings.map((f, i) => (
+                {findings.map((f, i) => (
                   <li key={i}>{f}</li>
                 ))}
               </ul>
@@ -92,20 +116,30 @@ export default async function StudyPage({ params }) {
           </div>
 
           {/* Parameters */}
-          <div className="detail-card">
-            <h2>Parameters</h2>
-            <div className="study-card-tags">
-              {study.parameters.map(p => (
-                <span key={p} className="tag">{p}</span>
+          {parameters.length > 0 && (
+            <div className="detail-card">
+              <h2>Parameters</h2>
+              <div className="study-card-tags">
+                {parameters.map(p => (
+                  <span key={p} className="tag">{p}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Downloads */}
+          {study.file_urls && study.file_urls.length > 0 && (
+            <div className="detail-card">
+              <h2>Downloads</h2>
+              {study.file_urls.map((url, i) => (
+                <div key={url} className="info-row">
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    File {i + 1}
+                  </a>
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* Download placeholder */}
-          <div className="detail-card">
-            <h2>Downloads</h2>
-            <p style={{ fontSize: '0.85rem' }}>Full report and raw data files will be available here when Supabase file storage is connected.</p>
-          </div>
+          )}
         </div>
       </div>
     </main>
